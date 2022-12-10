@@ -1,9 +1,14 @@
+# API
 from fastapi import FastAPI, HTTPException
 
+# Modeling and typing
 from pydantic import BaseModel
 from typing import Literal
 
+# RabbitMQ
 import pika
+
+# Config from environment variables
 from os import environ
 
 # Model for a risk point
@@ -13,7 +18,7 @@ class RiskPoint(BaseModel):
     # Longitude of the risk point
     longitude: float
     # Type of risk
-    type: Literal["flood", "obstruction", "hurricane"]
+    type: Literal["flood", "landslide", "hurricane"]
     # Additional information
     description: str | None = None
 
