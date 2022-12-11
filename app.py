@@ -25,7 +25,7 @@ class RiskPoint(BaseModel):
 
 # Configuration handler
 class RabbitMQConfig:
-    host = "127.0.0.1"
+    host = "rabbitmq"
     port = 5672
     publish_queue_name = "RISKPOINTS_QUEUE"
     username = "riskaway"
@@ -69,11 +69,8 @@ class RabbitMQConfig:
 class RabbitMQPublisher:
     def __init__(self, config: RabbitMQConfig) -> None:
         self.publish_queue_name = config.publish_queue_name
-        credentials = pika.PlainCredentials(
-            username=config.username, password=config.password, erase_on_connect=True
-        )
-        connection_parameters = pika.ConnectionParameters(
-            host=config.host, port=config.port, credentials=credentials
+        connection_parameters = pika.URLParameters(
+            f"amqp://{config.username}:{config.password}@{config.host}:{config.port}/%2F"
         )
         # Connect to RabbitMQ instance
         self.connection = pika.BlockingConnection(connection_parameters)
