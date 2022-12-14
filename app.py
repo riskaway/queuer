@@ -24,53 +24,34 @@ class RiskPoint(BaseModel):
 
 
 # Configuration handler
-class RabbitMQConfig:
-    host = "rabbitmq"
-    port = 5672
-    publish_queue_name = "RISKPOINTS_QUEUE"
-    username = "riskaway"
-    password = "riskaway"
-
-    def __init__(
-        self,
-        host: str = None,
-        port: int = None,
-        publish_queue_name: str = None,
-        username: str = None,
-        password: str = None,
-    ) -> None:
-        if host:
-            self.host = host
-        elif "RABBITMQ_HOST" in environ.keys():
-            self.host = environ["RABBITMQ_HOST"]
-
-        if port:
-            self.port = port
-        elif "RABBITMQ_PORT" in environ.keys():
-            self.port = int(environ["RABBITMQ_PORT"])
-
-        if publish_queue_name:
-            self.publish_queue_name = publish_queue_name
-        elif "RABBITMQ_PUBLISH_QUEUE" in environ.keys():
-            self.publish_queue_name = environ["RABBITMQ_PUBLISH_QUEUE"]
-
-        if username:
-            self.username = username
-        elif "RABBITMQ_DEFAULT_USER" in environ.keys():
-            self.username = environ["RABBITMQ_DEFAULT_USER"]
-
-        if password:
-            self.password = password
-        elif "RABBITMQ_DEFAULT_PASS" in environ.keys():
-            self.password = environ["RABBITMQ_DEFAULT_PASS"]
-
+RabbitMQConfig: dict = {
+    "host": environ["RABBITMQ_HOST"]
+    if "RABBITMQ_HOST" in environ.keys()
+    else "0.0.0.0",
+    # RabbitMQ runs on port 5672 by default
+    "port": int(environ["RABBITMQ_PORT"])
+    if "RABBITMQ_PORT" in environ.keys()
+    else 5672,
+    # Default user: guest
+    "username": environ["RABBITMQ_DEFAULT_USER"]
+    if "RABBITMQ_DEFAULT_USER" in environ.keys()
+    else "guest",
+    # Default password: guest
+    "password": environ["RABBITMQ_DEFAULT_PASS"]
+    if "RABBITMQ_DEFAULT_PASS" in environ.keys()
+    else "guest",
+    # Store in queue named "RISKPOINTS_QUEUE"
+    "publish_queue_name": environ["RABBITMQ_PUBLISH_QUEUE"]
+    if "RABBITMQ_PUBLISH_QUEUE" in environ.keys()
+    else "RISKPOINTS_QUEUE",
+}
 
 # RabbitMQ publisher
 class RabbitMQPublisher:
-    def __init__(self, config: RabbitMQConfig) -> None:
-        self.publish_queue_name = config.publish_queue_name
+    def __init__(self) -> None:
+        self.publish_queue_name = RabbitMQConfig["publish_queue_name"]
         connection_parameters = pika.URLParameters(
-            f"amqp://{config.username}:{config.password}@{config.host}:{config.port}/%2F"
+            f"amqp://{RabbitMQConfig['username']}:{RabbitMQConfig['password']}@{RabbitMQConfig['host']}:{RabbitMQConfig['port']}/%2F"
         )
         # Connect to RabbitMQ instance
         self.connection = pika.BlockingConnection(connection_parameters)
@@ -94,9 +75,10 @@ class RabbitMQPublisher:
         self.connection.close()
 
 
+print("RabbitMQ configuration:", RabbitMQConfig)
+
 app = FastAPI()
-config = RabbitMQConfig()
-rmq_client = RabbitMQPublisher(config)
+rmq_client = RabbitMQPublisher()
 
 # Add risk point
 @app.put("/add")
