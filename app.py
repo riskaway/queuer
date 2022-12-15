@@ -33,12 +33,12 @@ RabbitMQConfig: dict = {
     if "RABBITMQ_PORT" in environ.keys()
     else 5672,
     # Default user: guest
-    "username": environ["RABBITMQ_DEFAULT_USER"]
-    if "RABBITMQ_DEFAULT_USER" in environ.keys()
+    "username": environ["RABBITMQ_USER"]
+    if "RABBITMQ_USER" in environ.keys()
     else "guest",
     # Default password: guest
-    "password": environ["RABBITMQ_DEFAULT_PASS"]
-    if "RABBITMQ_DEFAULT_PASS" in environ.keys()
+    "password": environ["RABBITMQ_PASS"]
+    if "RABBITMQ_PASS" in environ.keys()
     else "guest",
     # Store in queue named "RISKPOINTS_QUEUE"
     "queue_name": environ["RABBITMQ_RISKPOINTS_QUEUE"]
