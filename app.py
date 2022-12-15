@@ -41,15 +41,15 @@ RabbitMQConfig: dict = {
     if "RABBITMQ_DEFAULT_PASS" in environ.keys()
     else "guest",
     # Store in queue named "RISKPOINTS_QUEUE"
-    "publish_queue_name": environ["RABBITMQ_PUBLISH_QUEUE"]
-    if "RABBITMQ_PUBLISH_QUEUE" in environ.keys()
+    "queue_name": environ["RABBITMQ_RISKPOINTS_QUEUE"]
+    if "RABBITMQ_RISKPOINTS_QUEUE" in environ.keys()
     else "RISKPOINTS_QUEUE",
 }
 
 # RabbitMQ publisher
 class RabbitMQPublisher:
     def __init__(self) -> None:
-        self.publish_queue_name = RabbitMQConfig["publish_queue_name"]
+        self.queue_name = RabbitMQConfig["queue_name"]
         connection_parameters = pika.URLParameters(
             f"amqp://{RabbitMQConfig['username']}:{RabbitMQConfig['password']}@{RabbitMQConfig['host']}:{RabbitMQConfig['port']}/%2F"
         )
@@ -57,13 +57,13 @@ class RabbitMQPublisher:
         self.connection = pika.BlockingConnection(connection_parameters)
         self.channel = self.connection.channel()
         # Declare queue
-        self.channel.queue_declare(queue=self.publish_queue_name)
+        self.channel.queue_declare(queue=self.queue_name)
 
     # Publish risk point to queue
     def publish(self, risk_data: str) -> bool:
         try:
             self.channel.basic_publish(
-                exchange="", routing_key=self.publish_queue_name, body=risk_data
+                exchange="", routing_key=self.queue_name, body=risk_data
             )
             return True
         except Exception as e:
