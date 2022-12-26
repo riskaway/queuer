@@ -1,92 +1,56 @@
 # API
 from fastapi import FastAPI, HTTPException
 
-# Modeling and typing
-from pydantic import BaseModel
-from typing import Literal
-
 # RabbitMQ
-import pika
+from rabbitmq_utils import RabbitMQConfig, RabbitMQProducer
 
-# Config from environment variables
-from os import environ
-
-# Model for a risk point
-class RiskPoint(BaseModel):
-    # Latitude of the risk point
-    latitude: float
-    # Longitude of the risk point
-    longitude: float
-    # Type of risk
-    type: Literal["flood", "landslide", "hurricane"]
-    # Additional information
-    description: str | None = None
-
-
-# Configuration handler
-RabbitMQConfig: dict = {
-    "host": environ["RABBITMQ_HOST"]
-    if "RABBITMQ_HOST" in environ.keys()
-    else "0.0.0.0",
-    # RabbitMQ runs on port 5672 by default
-    "port": int(environ["RABBITMQ_PORT"])
-    if "RABBITMQ_PORT" in environ.keys()
-    else 5672,
-    # Default user: guest
-    "username": environ["RABBITMQ_USER"]
-    if "RABBITMQ_USER" in environ.keys()
-    else "guest",
-    # Default password: guest
-    "password": environ["RABBITMQ_PASS"]
-    if "RABBITMQ_PASS" in environ.keys()
-    else "guest",
-    # Store in queue named "RISKPOINTS_QUEUE"
-    "queue_name": environ["RABBITMQ_RISKPOINTS_QUEUE"]
-    if "RABBITMQ_RISKPOINTS_QUEUE" in environ.keys()
-    else "RISKPOINTS_QUEUE",
-}
-
-# RabbitMQ publisher
-class RabbitMQPublisher:
-    def __init__(self) -> None:
-        self.queue_name = RabbitMQConfig["queue_name"]
-        connection_parameters = pika.URLParameters(
-            f"amqp://{RabbitMQConfig['username']}:{RabbitMQConfig['password']}@{RabbitMQConfig['host']}:{RabbitMQConfig['port']}/%2F"
-        )
-        # Connect to RabbitMQ instance
-        self.connection = pika.BlockingConnection(connection_parameters)
-        self.channel = self.connection.channel()
-        # Declare queue
-        self.channel.queue_declare(queue=self.queue_name)
-
-    # Publish risk point to queue
-    def publish(self, risk_data: str) -> bool:
-        try:
-            self.channel.basic_publish(
-                exchange="", routing_key=self.queue_name, body=risk_data
-            )
-            return True
-        except Exception as e:
-            print("[ERROR]", e)
-            return False
-
-    # Close connection
-    def close(self) -> None:
-        self.connection.close()
-
+# Risk points
+from points import FloodPoint, EarthquakePoint, HurricanePoint
 
 print("RabbitMQ configuration:", RabbitMQConfig)
 
 app = FastAPI()
-rmq_client = RabbitMQPublisher()
+rmq_client = RabbitMQProducer()
 
-# Add risk point
-@app.put("/add")
-async def add_risk_point(risk_point: RiskPoint):
-    all_ok: bool = rmq_client.publish(risk_point.json())
-    if all_ok:
-        return HTTPException(status_code=200, detail="Successfully added risk point")
-    return HTTPException(status_code=500, detail="Error adding risk point")
+
+# Add flood point
+@app.put("/add/flood")
+async def add_flood_point(flood_point: FloodPoint):
+    print("[INFO] Received flood point:", flood_point)
+    try:
+        rmq_client.publish(flood_point.json(exclude_none=True))
+        return HTTPException(status_code=200, detail="Successfully added flood point")
+    except Exception as e:
+        print("[ERROR] Error adding hurricane point:", e)
+        return HTTPException(status_code=500, detail="Error adding flood point")
+
+
+# Add earthquake point
+@app.put("/add/earthquake")
+async def add_earthquake_point(earthquake_point: EarthquakePoint):
+    print("[INFO] Received earthquake_point point:", earthquake_point)
+    try:
+        rmq_client.publish(earthquake_point.json(exclude_none=True))
+        return HTTPException(
+            status_code=200, detail="Successfully added earthquake point"
+        )
+    except Exception as e:
+        print("[ERROR] Error adding hurricane point:", e)
+        return HTTPException(status_code=500, detail="Error adding earthquake point")
+
+
+# Add hurricane point
+@app.put("/add/hurricane")
+async def add_hurricane_point(hurricane_point: HurricanePoint):
+    print("[INFO] Received hurricane point:", hurricane_point)
+    try:
+        rmq_client.publish(hurricane_point.json(exclude_none=True))
+        return HTTPException(
+            status_code=200, detail="Successfully added hurricane point"
+        )
+    except Exception as e:
+        print("[ERROR] Error adding hurricane point:", e)
+        return HTTPException(status_code=500, detail="Error adding hurricane point")
 
 
 # Close rabbitmq client on shutdown
