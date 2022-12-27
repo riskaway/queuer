@@ -24,7 +24,7 @@ RabbitMQConfig: dict = {
     # Store in queue named "RISKPOINTS_QUEUE"
     "queue_name": environ["RABBITMQ_RISKPOINTS_QUEUE"]
     if "RABBITMQ_RISKPOINTS_QUEUE" in environ.keys()
-    else "RISKPOINTS_QUEUE",
+    else "riskpoints_queue",
 }
 
 # RabbitMQ publisher
@@ -38,7 +38,7 @@ class RabbitMQProducer:
         self.connection = pika.BlockingConnection(connection_parameters)
         self.channel = self.connection.channel()
         # Declare queue
-        self.channel.queue_declare(queue=self.queue_name)
+        self.channel.queue_declare(queue=self.queue_name, passive=True)
 
     # Publish risk point to queue
     def publish(self, risk_data: str) -> bool:
