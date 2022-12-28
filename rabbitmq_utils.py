@@ -22,8 +22,8 @@ RabbitMQConfig: dict = {
     if "RABBITMQ_PASS" in environ.keys()
     else "guest",
     # Store in queue named "RISKPOINTS_QUEUE"
-    "queue_name": environ["RABBITMQ_RISKPOINTS_QUEUE"]
-    if "RABBITMQ_RISKPOINTS_QUEUE" in environ.keys()
+    "queue_name": environ["RABBITMQ_QUEUE"]
+    if "RABBITMQ_QUEUE" in environ.keys()
     else "riskpoints_queue",
 }
 
